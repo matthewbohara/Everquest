@@ -11,6 +11,17 @@ Full technical details below.
 
 # EverQuest Tradeskill 350 Toolkit
 
+> **⚠️ Work in Progress**
+> | Script | Status |
+> |--------|--------|
+> | `eq_scraper.py` | ✅ Verified working |
+> | `eq_ingredient_sources.py` | ✅ Ready (follows same pattern as scraper) |
+> | `eq_build_database.py` | 🧪 In active testing |
+> | `eq_find_missing.py` | 🧪 In active testing |
+> | `eq_build_spreadsheet.py` | ✅ Ready |
+>
+> Bug reports and contributions are very welcome — open an issue or PR!
+
 A set of Python scripts to help EverQuest players identify missing tradeskill recipes needed to reach skill level 350, complete with ingredient lists and where to find them.
 
 Built by the EQ community. Recipe data sourced from [EQTraders Corner](https://www.eqtraders.com) — huge thanks to Niami Denmother and all contributors there. Adetia's Path to 350 spreadsheets (Township Rebellion, Luclin server) were also invaluable in understanding the recipe structure.
@@ -23,15 +34,34 @@ Built by the EQ community. Recipe data sourced from [EQTraders Corner](https://w
 2. **Finds your missing recipes** by comparing against your EQ outputfiles (no third-party tools needed)
 3. **Scrapes ingredient details** for every missing recipe (~8 hours, run overnight)
 4. **Scrapes ingredient sources** — where to buy, drop, forage, fish, or craft each ingredient
-5. **Uploads everything to Claude** (or any AI) to build a personalized Excel spreadsheet
+5. **Builds a personalized Excel spreadsheet** locally — no AI or external tools needed
 
 ---
 
 ## Requirements
 
-- Python 3.8+
-- `pip install requests beautifulsoup4 openpyxl`
-- EverQuest (Live server)
+### Python
+- **Python 3.8 or higher** — download from [python.org](https://www.python.org/downloads/)
+  - During install on Windows, check **"Add Python to PATH"**
+  - Verify install: open a terminal and type `python --version`
+
+### Python packages
+Install all dependencies in one command:
+```bash
+pip install requests beautifulsoup4 openpyxl
+```
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `requests` | 2.28.0+ | HTTP requests to EQTraders |
+| `beautifulsoup4` | 4.11.0+ | HTML parsing of recipe pages |
+| `openpyxl` | 3.0.10+ | Building the final Excel spreadsheet |
+
+All other imports (`csv`, `json`, `os`, `sys`, `re`, `glob`, `time`) are part of Python's standard library — no extra install needed.
+
+### Other
+- EverQuest (Live server) with tradeskill outputfiles
+- Internet connection (for scraping EQTraders)
 
 ---
 
@@ -62,6 +92,9 @@ CharacterName_Server-Alchemy-Recipes.txt
 ```
 
 Copy all of them into the same folder as these scripts.
+
+> **Tip — Including your Tradeskill Depot in inventory:**
+> When running `/outputfile inventory`, your Tradeskill Depot will automatically be included **if you have it open** at the time. To ensure it's loaded, visit a bank, open your Tradeskill Depot window, then run the command. This gives the most complete inventory cross-reference when building your spreadsheet.
 
 ---
 
@@ -123,8 +156,6 @@ Output: `scraped_ingredients/ingredients_WITH_SOURCES.csv`
 
 ### Step 6 — Build your spreadsheet
 
-Upload `ingredients_WITH_SOURCES.csv` and your inventory outputfile to Claude (or use the included `eq_build_spreadsheet.py`):
-
 ```bash
 python eq_build_spreadsheet.py
 ```
@@ -157,6 +188,15 @@ This builds a full Excel file with:
 - **Re-run `eq_find_missing.py` anytime** after doing more combines to update your progress
 - **Only re-run `eq_build_database.py`** when a new EQ expansion drops
 - The scripts are **read-only** with respect to EverQuest — they don't touch any game files
+
+### Running scripts in parallel
+`eq_build_database.py` and `eq_scraper.py` can run **at the same time** in separate terminal windows — they write to different folders and don't interfere with each other:
+- `eq_build_database.py` → `eq_recipe_db/`
+- `eq_scraper.py` → `scraped_ingredients/`
+
+If running both simultaneously, consider increasing the delay in `eq_build_database.py` from `2.0` to `3.0` seconds to be polite to EQTraders (open the script in a text editor and change `DELAY_SECONDS = 2.0` near the top).
+
+Similarly, `eq_ingredient_sources.py` can run at the same time as `eq_build_database.py` once `eq_scraper.py` has finished.
 
 ---
 
