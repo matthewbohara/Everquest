@@ -24,21 +24,20 @@ Bug reports and contributions are very welcome — open an issue or PR!
 
 ## Pipeline Overview
 
-The scripts must run in a specific order, but some can run **in parallel** to save time. Here's the full picture:
+A pre-built copy of `eq_recipe_db/` is included in this repo — **most users can skip straight to Step 2** and never need to run `eq_build_database.py` at all. Only re-build the database if a new EQ expansion has dropped since the last update.
 
 ```
-┌─────────────────────────────┐     ┌──────────────────────────────┐
-│   eq_build_database.py      │     │      eq_scraper.py           │
-│   (~2-4 hours, one-time)    │     │      (~8 hours, overnight)   │
-│                             │     │                              │
-│   → eq_recipe_db/           │     │   → scraped_ingredients/     │
-│                             │     │     ingredients_ALL.csv      │
-└────────────┬────────────────┘     └──────────────┬───────────────┘
-             │                                      │
-             │  ✅ Can run simultaneously            │
-             │     (different output folders)       │
-             │                                      │
-             ▼                                      ▼
+  eq_recipe_db/  ← included, no build needed
+       │
+       │                    ┌──────────────────────────────┐
+       │                    │      eq_scraper.py           │
+       │                    │      (~8 hours, overnight)   │
+       │                    │                              │
+       │                    │   → scraped_ingredients/     │
+       │                    │     ingredients_ALL.csv      │
+       │                    └──────────────┬───────────────┘
+       │                                   │
+       ▼                                   ▼
 ┌─────────────────────────────┐     ┌──────────────────────────────┐
 │   eq_find_missing.py        │     │   eq_ingredient_sources.py   │
 │   (seconds)                 │     │   (~1-2 hours)               │
@@ -63,32 +62,27 @@ The scripts must run in a specific order, but some can run **in parallel** to sa
 
 | Can run together? | Scripts |
 |---|---|
-| ✅ Yes | `eq_build_database.py` + `eq_scraper.py` |
-| ✅ Yes | `eq_build_database.py` + `eq_ingredient_sources.py` |
+| ✅ Yes | `eq_find_missing.py` + `eq_scraper.py` |
 | ❌ No | `eq_scraper.py` must finish **before** `eq_ingredient_sources.py` |
 | ❌ No | `eq_ingredient_sources.py` must finish **before** `eq_build_spreadsheet.py` |
-| ❌ No | `eq_build_database.py` must finish **before** `eq_find_missing.py` |
 
 ### Recommended terminal layout
 
 **Terminal 1** and **Terminal 2** — start these at the same time:
 ```
-Terminal 1: python eq_build_database.py
+Terminal 1: python eq_find_missing.py
 Terminal 2: python eq_scraper.py
 ```
 
-**After both finish**, start these (can also run simultaneously):
+**After scraper finishes:**
 ```
-Terminal 1: python eq_find_missing.py
-Terminal 2: python eq_ingredient_sources.py
+python eq_ingredient_sources.py
 ```
 
 **After sources finish:**
 ```
 python eq_build_spreadsheet.py
 ```
-
-> **Tip:** If running `eq_build_database.py` and `eq_scraper.py` simultaneously, consider increasing the delay in `eq_build_database.py` from `2.0` to `3.0` seconds to be polite to EQTraders (open the script and change `DELAY_SECONDS = 2.0` near the top).
 
 ---
 
@@ -158,19 +152,7 @@ Copy all of them into the same folder as these scripts.
 
 ---
 
-### Step 2 — Build the recipe database (one-time, ~2-4 hours)
-
-```
-python eq_build_database.py
-```
-
-Scrapes all tradeskill recipes from EQTraders and saves them locally in `eq_recipe_db/`. You only need to do this once — re-run if a new EQ expansion drops.
-
-Press `Ctrl+C` at any time to pause. Re-run to resume where you left off.
-
----
-
-### Step 3 — Find your missing recipes
+### Step 2 — Find your missing recipes
 
 ```
 python eq_find_missing.py
@@ -184,7 +166,7 @@ Compares your outputfiles against the database and writes:
 
 ---
 
-### Step 4 — Scrape ingredients for missing recipes (~8 hours, run overnight)
+### Step 3 — Scrape ingredients for missing recipes (~8 hours, run overnight)
 
 ```
 python eq_scraper.py
@@ -198,7 +180,7 @@ Press `Ctrl+C` to pause. Re-run to resume.
 
 ---
 
-### Step 5 — Scrape ingredient sources (~1-2 hours)
+### Step 4 — Scrape ingredient sources (~1-2 hours)
 
 ```
 python eq_ingredient_sources.py
@@ -216,7 +198,7 @@ Looks up each unique ingredient and records where to get it:
 
 ---
 
-### Step 6 — Build your spreadsheet
+### Step 5 — Build your spreadsheet
 
 ```
 python eq_build_spreadsheet.py
@@ -231,15 +213,31 @@ Builds a full Excel file with:
 
 ---
 
+## Rebuilding the Database (Advanced)
+
+The included `eq_recipe_db/` was built from EQTraders and should be good until a new expansion drops. If you need to rebuild it:
+
+```
+python eq_build_database.py
+```
+
+This scrapes all tradeskill recipes from EQTraders and overwrites the local `eq_recipe_db/` folder. Takes ~2-4 hours. Press `Ctrl+C` to pause; re-run to resume.
+
+> **Tip:** If running `eq_build_database.py` at the same time as `eq_scraper.py`, consider increasing the delay from `2.0` to `3.0` seconds to be polite to EQTraders (change `DELAY_SECONDS = 2.0` near the top of the script).
+
+Once done, zip up the `eq_recipe_db/` folder and note the date it was built when sharing — so others know how fresh the data is.
+
+---
+
 ## Script Reference
 
 | Script | Purpose | Runtime |
 |---|---|---|
-| `eq_build_database.py` | Build local recipe DB from EQTraders | ~2-4h (one-time) |
 | `eq_find_missing.py` | Find your missing recipes | Seconds |
 | `eq_scraper.py` | Get ingredients for missing recipes | ~8h overnight |
 | `eq_ingredient_sources.py` | Get where to find each ingredient | ~1-2h |
 | `eq_build_spreadsheet.py` | Build final Excel spreadsheet | Seconds |
+| `eq_build_database.py` | Rebuild recipe DB from EQTraders (advanced) | ~2-4h |
 
 ---
 
@@ -249,7 +247,6 @@ Builds a full Excel file with:
 - Progress is saved after every recipe/item in the `scraped_ingredients/` folder
 - Multiple characters are supported — just copy all their outputfiles into the folder
 - Re-run `eq_find_missing.py` anytime after doing more combines to update your progress
-- Only re-run `eq_build_database.py` when a new EQ expansion drops
 - The scripts are read-only with respect to EverQuest — they don't touch any game files
 
 ---
