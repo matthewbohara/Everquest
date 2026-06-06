@@ -9,6 +9,19 @@ In game name is Darkmorte on The Rathe - Prexus
 
 Full technical details below.
 
+*** Note, some of these can run in parallel, this is mentioned below but i figured i would put it here as well
+Terminal 1: eq_build_database.py
+Terminal 2: eq_scraper.py          ← start at same time as above
+
+(wait for both to finish)
+
+Terminal 1: eq_find_missing.py     ← seconds, finishes instantly
+Terminal 2: eq_ingredient_sources.py
+
+(wait for sources to finish)
+
+python eq_build_spreadsheet.py     ← seconds, finishes instantly
+
 # EverQuest Tradeskill 350 Toolkit
 
 > **⚠️ Work in Progress**
